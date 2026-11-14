@@ -1,0 +1,15 @@
+# Build output and local secrets
+output/
+haos-cache/
+*.img
+*.img.xz
+*.ext4
+*.bin
+*.deb
+*.gbl
+*.hex
+*.out
+*.pem
+*.key
+*.log
+.env*

@@ -1,0 +1,262 @@
+# U-Boot script for handling (re)booting the Futurehome cube-2v0-eu into various
+# modes, authored by github.com/RockPaperPencil. The following licence header
+# applies to the cube2v0-specific script portion if the script is included in other files.
+# SPDX-License-Identifier: GPL-2.0+
+
+# Select the I2C0 bus as that is where the LED driver is attached and turn off
+# all LED driver channels to get them to a known state
+i2c dev 0
+i2c mw 0x23 0x2 0x0
+i2c mw 0x23 0x3 0x0
+i2c mw 0x23 0x4 0x0
+i2c mw 0x23 0x5 0x0
+
+# Dim down the LEDs
+i2c mw 0x23 0x0 0x0
+
+# Values are written to memory for comparison purposes
+mw.l 0x30800000 0x5242c300 1
+if cmp.l 0x30800000 0xFF1005C8 1 ; then 
+    echo "Reboot mode flag detected, normal reboot..."
+fi
+
+mw.l 0x30800000 0x5242c309 1
+if cmp.l 0x30800000 0xFF1005C8 1 ; then 
+    echo "Bootloader console starting, caused by detected reboot flag"
+    i2c mw 0x23 0x2 0x22
+    i2c mw 0x23 0x0 0x1
+    mw.l 0xFF1005C8 0x5242c300 1
+    setenv stderr serial,usbacm
+    setenv stdin serial,usbacm
+    setenv stdout serial,usbacm
+    exit
+fi
+
+mw.l 0x30800000 0x5242c30C 1
+if cmp.l 0x30800000 0xFF1005C8 1 ; then 
+    echo "U-Boot usb mass storage mode starting, caused by detected reboot flag"
+    i2c mw 0x23 0x4 0x4
+    i2c mw 0x23 0x5 0x20
+    i2c mw 0x23 0x0 0x1
+    mw.l 0xFF1005C8 0x5242c300 1
+    ums 0 mmc 0
+    echo "Usb storage mode finished, resetting system"
+    i2c mw 0x23 0x4 0x0
+    i2c mw 0x23 0x5 0x0
+    reset
+fi
+
+# No block here for harware maskrom mode as that case is not handled by U-Boot
+
+mw.l 0x30800000 0x5242c301 1
+if cmp.l 0x30800000 0xFF1005C8 1 ; then 
+    echo "U-Boot rockusb mode starting, caused by detected reboot flag"
+    i2c mw 0x23 0x3 0x18
+    i2c mw 0x23 0x5 0x6
+    i2c mw 0x23 0x0 0x1
+    mw.l 0xFF1005C8 0x5242c300 1
+    rockusb 0 mmc 0
+    i2c mw 0x23 0x3 0x0
+    i2c mw 0x23 0x5 0x0
+    reset
+fi
+
+# Function button handling section
+gpio read function_button 96
+if test "${function_button}" = "0"; then
+    echo "Release button now to enter bootloader console"
+    i2c mw 0x23 0x2 0x22
+    sleep 2
+
+    gpio read function_button 96
+    if test "${function_button}" = "1"; then
+        echo "Bootloader console mode starting, caused by function button"
+        i2c mw 0x23 0x0 0x1
+        setenv stderr serial,usbacm
+        setenv stdin serial,usbacm
+        setenv stdout serial,usbacm
+        exit
+    else
+        echo "Release button now to make eMMC storage available over USB..."
+        i2c mw 0x23 0x2 0x0
+        i2c mw 0x23 0x4 0x4
+        i2c mw 0x23 0x5 0x20
+        sleep 2
+    fi
+
+    gpio read function_button 96
+    if test "${function_button}" = "1"; then
+        echo "U-Boot usb mass storage mode starting, caused by function button"
+        i2c mw 0x23 0x0 0x1
+        ums 0 mmc 0
+        i2c mw 0x23 0x4 0x0
+        i2c mw 0x23 0x5 0x0
+        reset
+    else
+        echo "Release button now to start U-Boot rockusb session"
+        i2c mw 0x23 0x3 0x18
+        i2c mw 0x23 0x4 0x0
+        i2c mw 0x23 0x5 0x6
+        sleep 2
+    fi
+
+    gpio read function_button 96
+    if test "${function_button}" = "1"; then
+        echo "U-Boot rockusb mode starting, caused by function button"
+        i2c mw 0x23 0x0 0x1
+        rockusb 0 mmc 0
+        i2c mw 0x23 0x3 0x0
+        i2c mw 0x23 0x5 0x0
+    else
+        echo "Release button now to enter hardware maskrom mode..."
+        i2c mw 0x23 0x3 0x8
+        i2c mw 0x23 0x4 0x10
+        i2c mw 0x23 0x5 0x0
+        sleep 2
+    fi
+
+    gpio read function_button 96
+    if test "${function_button}" = "1"; then
+        echo "Entering hardware maskrom mode..."
+        i2c mw 0x23 0x0 0x1
+        mw.l 0xFF1005C8 0xEF08A53C 1
+        reset
+    else
+        echo "Function button was not released, resetting system..."
+        i2c mw 0x23 0x3 0x0
+        i2c mw 0x23 0x4 0x0
+        reset
+    fi
+
+fi
+
+# Normal boot, set LED yellow
+i2c mw 0x23 0x4 0x16
+i2c mw 0x23 0x5 0x13
+i2c mw 0x23 0x0 0x1
+
+#
+# End of Futurehome cube-2v0-eu boot mode script
+#
+part start ${devtype} ${devnum} hassos-bootstate mmc_env
+${devtype} dev ${devnum}
+
+setenv loadbootstate " \
+    echo 'loading env...'; \
+    ${devtype} read ${ramdisk_addr_r} ${mmc_env} 0x40; \
+    env import -c ${ramdisk_addr_r} 0x8000;"
+
+setenv storebootstate " \
+    echo 'storing env...'; \
+    env export -c -s 0x8000 ${ramdisk_addr_r} BOOT_ORDER BOOT_A_LEFT BOOT_B_LEFT MACHINE_ID; \
+    ${devtype} write ${ramdisk_addr_r} ${mmc_env} 0x40;"
+
+run loadbootstate
+test -n "${BOOT_ORDER}" || setenv BOOT_ORDER "A B"
+test -n "${BOOT_A_LEFT}" || setenv BOOT_A_LEFT 3
+test -n "${BOOT_B_LEFT}" || setenv BOOT_B_LEFT 3
+
+# Allows ConditionFirstBoot=
+test -n "${MACHINE_ID}" || setenv BOOT_CONDITION "systemd.condition-first-boot=true"
+
+# HAOS bootargs
+setenv bootargs_haos "zram.enabled=1 zram.num_devices=3 systemd.machine_id=${MACHINE_ID} fsck.repair=yes ${BOOT_CONDITION}"
+
+# HAOS system A/B
+setenv bootargs_a "root=PARTUUID=8d3d53e3-6d49-4c38-8349-aff6859e82fd rootfstype=erofs ro rootwait"
+setenv bootargs_b "root=PARTUUID=a3ec664e-32ce-4665-95ea-7ae90ce9aa20 rootfstype=erofs ro rootwait"
+
+part number ${devtype} ${devnum} hassos-boot boot_partnum
+
+# Load environment from haos-config.txt
+if test -e ${devtype} ${devnum}:${boot_partnum} haos-config.txt; then
+  fatload ${devtype} ${devnum}:${boot_partnum} ${ramdisk_addr_r} haos-config.txt
+  env import -t ${ramdisk_addr_r} ${filesize}
+fi
+
+# Load extraargs
+fileenv ${devtype} ${devnum}:${boot_partnum} ${ramdisk_addr_r} cmdline.txt cmdline
+
+# Load device tree
+setenv fdtfile rk3328-futurehome-cube-2v0-eu.dtb
+echo "Loading standard device tree ${fdtfile}"
+fatload ${devtype} ${devnum}:${boot_partnum} ${fdt_addr_r} ${fdtfile}
+fdt addr ${fdt_addr_r}
+
+# load dt overlays
+fdt resize 65536
+for overlay_file in ${overlays}; do
+  if fatload ${devtype} ${devnum}:${boot_partnum} ${ramdisk_addr_r} overlays/${overlay_file}.dtbo; then
+    echo "Applying kernel provided DT overlay ${overlay_file}.dtbo"
+    fdt apply ${ramdisk_addr_r} || setenv overlay_error "true"
+  fi
+done
+if test "${overlay_error}" = "true"; then
+  echo "Error applying DT overlays, restoring original DT"
+  fatload ${devtype} ${devnum}:${boot_partnum} ${fdt_addr_r} ${fdtfile}
+fi
+
+# Refill the tries when no slot in BOOT_ORDER has any left
+setenv BOOT_TRIES_LEFT
+setenv BOOT_HAS_A
+setenv BOOT_HAS_B
+for BOOT_SLOT in "${BOOT_ORDER}"; do
+  if test "x${BOOT_SLOT}" = "xA"; then
+    setenv BOOT_HAS_A 1
+    if test ${BOOT_A_LEFT} -gt 0; then
+      setenv BOOT_TRIES_LEFT 1
+    fi
+  elif test "x${BOOT_SLOT}" = "xB"; then
+    setenv BOOT_HAS_B 1
+    if test ${BOOT_B_LEFT} -gt 0; then
+      setenv BOOT_TRIES_LEFT 1
+    fi
+  fi
+done
+if test -z "${BOOT_TRIES_LEFT}"; then
+  echo "No slot has tries left, resetting tries to 3"
+  setenv BOOT_A_LEFT 3
+  setenv BOOT_B_LEFT 3
+  # Append slots that RAUC removed from BOOT_ORDER when marking them bad
+  test -n "${BOOT_HAS_A}" || setenv BOOT_ORDER "${BOOT_ORDER} A"
+  test -n "${BOOT_HAS_B}" || setenv BOOT_ORDER "${BOOT_ORDER} B"
+fi
+
+setenv bootargs
+for BOOT_SLOT in "${BOOT_ORDER}"; do
+  if test "x${bootargs}" != "x"; then
+    # skip remaining slots
+  elif test "x${BOOT_SLOT}" = "xA"; then
+    if test ${BOOT_A_LEFT} -gt 0; then
+      setexpr BOOT_A_LEFT ${BOOT_A_LEFT} - 1
+      echo "Trying to boot slot A, ${BOOT_A_LEFT} attempts remaining. Loading kernel ..."
+      part number ${devtype} ${devnum} hassos-kernel0 kernel_partnum
+      if load ${devtype} ${devnum}:${kernel_partnum} ${kernel_addr_r} Image; then
+          setenv bootargs "${bootargs_haos} ${bootargs_a} rauc.slot=A ${cmdline}"
+      fi
+    fi
+  elif test "x${BOOT_SLOT}" = "xB"; then
+    if test ${BOOT_B_LEFT} -gt 0; then
+      setexpr BOOT_B_LEFT ${BOOT_B_LEFT} - 1
+      echo "Trying to boot slot B, ${BOOT_B_LEFT} attempts remaining. Loading kernel ..."
+      part number ${devtype} ${devnum} hassos-kernel1 kernel_partnum
+      if load ${devtype} ${devnum}:${kernel_partnum} ${kernel_addr_r} Image; then
+          setenv bootargs "${bootargs_haos} ${bootargs_b} rauc.slot=B ${cmdline}"
+      fi
+    fi
+  fi
+done
+
+if test -n "${bootargs}"; then
+  run storebootstate
+else
+  echo "Failed to load kernel from any slot, resetting..."
+  run storebootstate
+  reset
+fi
+
+echo "Starting kernel"
+booti ${kernel_addr_r} - ${fdt_addr_r}
+
+echo "Boot failed, resetting..."
+reset

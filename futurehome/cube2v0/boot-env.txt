@@ -1,0 +1,1 @@
+overlays=rockchip-futurehome-cube-2v0-eu-efr32mg12-power-on rockchip-futurehome-cube-2v0-eu-zgm130s-power-on
