@@ -5,6 +5,9 @@ An **unofficial, experimental** Home Assistant OS (HAOS) port for the
 Cube-specific source files and instructions needed to build the image. It is
 independent of Futurehome and the Home Assistant project.
 
+This repository currently contains **source and instructions only**. There
+is no published installation image or tested automatic OS update feed yet.
+
 ## Current status
 
 | Feature | Status |
@@ -34,9 +37,9 @@ Futurehome installation will be lost. Our original RockUSB backup was only
 valid for its first 32 MiB and **cannot** restore the factory installation.
 Make your own recovery plan before flashing.
 
-The complete development history, including the Zigbee investigation, is
-being kept separately from these installation instructions. The build in
-this repository has been run successfully once; installation and Z-Wave
+The detailed private development log is kept separately from these
+installation instructions. The build in this repository has been run
+successfully once; installation and Z-Wave
 controller communication were tested on one hub.
 
 See the [onboard Zigbee findings](docs/zigbee.md) if you can help map the

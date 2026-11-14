@@ -17,6 +17,8 @@ sha256sum ../haos/output/images/haos_cube2v0-19.0.dev0.img
 
 For the first successful build, the **raw** image SHA-256 was
 `9c65472a62334aeea6ec989046c6a2935af8e1089d71853cff1abd9a87b17c7c`.
+The corresponding compressed image SHA-256 was
+`292735c0e69673ea0d18764caef48cdf031a273c230c57ddda01c5b371898152`.
 Rebuilds may differ; record your own hash and do not use this hash as a
 universal release checksum.
 
