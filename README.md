@@ -14,7 +14,7 @@ is no published installation image or tested automatic OS update feed yet.
 | --- | --- |
 | HAOS boot and Home Assistant onboarding | Tested on one CUBE-2V0-EU |
 | Ethernet and USB | Working on the test hub |
-| Onboard Z-Wave | Z-Wave JS connects to the controller on `/dev/ttyS1`; a new device inclusion has not yet been tested |
+| Onboard Z-Wave | Z-Wave JS connects on `/dev/ttyS1`; a Popp & Co wall plug was paired, reported alive, and responded to on/off control |
 | Onboard Zigbee | **Unavailable**; do not flash the experimental Zigbee firmware in this repository's development notes |
 | External USB Zigbee adapter | Possible USB option, not tested as part of this port |
 | OS updates | Official HAOS OS updates are unavailable for this custom board |
@@ -39,8 +39,8 @@ Make your own recovery plan before flashing.
 
 The detailed private development log is kept separately from these
 installation instructions. The build in this repository has been run
-successfully once; installation and Z-Wave
-controller communication were tested on one hub.
+successfully once; installation and basic Z-Wave device control were tested
+on one hub.
 
 See the [onboard Zigbee findings](docs/zigbee.md) if you can help map the
 radio's connections or recovery path.

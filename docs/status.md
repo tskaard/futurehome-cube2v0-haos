@@ -7,10 +7,13 @@ Use a **CUBE-2V0-EU** Futurehome Smarthub II. The test device has an RK3328,
 a USB-C developer connection. Other Cube models have not been tested.
 
 The built-in Z-Wave controller is exposed at `/dev/ttyS1`. Z-Wave JS reached
-`Ready` after the controller's old network was reset on the test hub. This
-proves communication with the controller; pairing a new device is still
-untested. Resetting a Z-Wave network discards its node associations. Keep a
-controller backup if you need to preserve an existing network.
+`Ready` after the controller's old network was reset on the test hub. On
+2026-11-14, a Popp & Co 05438 wall plug was paired. Home Assistant showed
+the node as alive and recorded on/off changes while the plug was controlled.
+This verifies basic inclusion and switching on one device; energy metering,
+secure inclusion, and a larger network remain untested. Resetting a Z-Wave
+network discards its node associations. Keep a controller backup if you need
+to preserve an existing network.
 
 The built-in Zigbee radio is **not usable with ZHA in this version**. The
 factory radio application spoke Futurehome's serial protocol. An

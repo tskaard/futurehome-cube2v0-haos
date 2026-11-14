@@ -71,6 +71,7 @@ connected and leave the drive attached afterward.
 
 Install the **Z-Wave JS** app, select `/dev/ttyS1` as its serial device,
 and set the radio region appropriate for your country. The test controller
-connected and reached `Ready`. A new device inclusion remains to be
-tested. If the controller contains an existing network, back it up before
-resetting or replacing anything.
+connected and reached `Ready`; one Popp & Co wall plug was subsequently
+paired and switched on and off through Home Assistant. If the controller
+contains an existing network, back it up before resetting or replacing
+anything.
