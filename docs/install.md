@@ -40,10 +40,21 @@ rkdeveloptool wl 0 ../haos/output/images/haos_cube2v0-19.0.dev0.img
 The write command overwrites the factory partitions. A successful exit
 alone is not a full verification. On our Cube, RockUSB reads beyond 32 MiB
 returned `0xCC` filler even though the write succeeded. A later USB mass
-storage (UMS) read matched all read-only image regions. If you can enter
-the Cube's UMS mode, compare those regions before relying on the install;
-do not interpret a RockUSB `rl` readback as a full eMMC backup or proof of
-failure.
+storage (UMS) read matched the first 600 MiB, covering the bootloader,
+boot partition, kernels, system partitions, and bootstate. The writable
+overlay begins at 600 MiB and can legitimately change. If you enter the
+Cube's UMS mode **before normal boot**, identify its whole-disk device with
+`lsblk`, then compare that read-only region:
+
+```sh
+lsblk -o NAME,SIZE,MODEL,TRAN
+sudo cmp -n 629145600 ../haos/output/images/haos_cube2v0-19.0.dev0.img /dev/sdX
+```
+
+Replace `/dev/sdX` with the Cube's **whole disk**, identified by its size
+and USB transport. The test Cube reported 7,818,182,656 bytes and model
+`UMS disk 0`. `cmp` reads the disk; it does not write it. Do not interpret
+a RockUSB `rl` readback as a full eMMC backup or proof of failure.
 
 Disconnect the developer cable, connect Ethernet, and power the Cube
 normally. First boot downloads Home Assistant Core and can take 20 minutes
