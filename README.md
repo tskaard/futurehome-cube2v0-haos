@@ -25,6 +25,17 @@ installation of the Z-Wave JS app. Moving the data disk to a 64 GB USB drive
 allowed the app to install. **Plan on a separate USB data drive for this
 version.** The data-disk move erases the selected drive.
 
+## Have a spare Cube?
+
+We need another **CUBE-2V0-EU with its original onboard Zigbee radio
+firmware** to test the Zigbee connection and a safe firmware update path. The
+original Cube OS does not need to be working. If you can lend or donate a
+hub, or run a few checks on your own hub, please [reach out in the Zigbee
+hardware issue](https://github.com/tskaard/futurehome-cube2v0-haos/issues/1).
+Please do not post your shipping address or the hub's serial label publicly;
+we can arrange any handoff privately. No Zigbee firmware flashing is needed
+to make an initial contribution.
+
 ## Start here
 
 1. Read [requirements and limitations](docs/status.md).
