@@ -29,12 +29,13 @@ version.** The data-disk move erases the selected drive.
 
 We need another **CUBE-2V0-EU with its original onboard Zigbee radio
 firmware** to test the Zigbee connection and a safe firmware update path. The
-original Cube OS does not need to be working. If you can lend or donate a
-hub, or run a few checks on your own hub, please [reach out in the Zigbee
-hardware issue](https://github.com/tskaard/futurehome-cube2v0-haos/issues/1).
+original Cube OS does not need to be working. If you have a hub you can sell
+or give away, or can run a few non-destructive checks on your own hub, please
+[reach out in the Zigbee hardware issue](https://github.com/tskaard/futurehome-cube2v0-haos/issues/1).
 Please do not post your shipping address or the hub's serial label publicly;
 we can arrange any handoff privately. No Zigbee firmware flashing is needed
-to make an initial contribution.
+for remote checks. A hub transferred for development may be permanently
+modified or damaged during Zigbee experiments.
 
 ## Start here
 
