@@ -24,11 +24,14 @@ working firmware image and must not be used as an installation step.**
 Offline disassembly of the unencrypted Futurehome 2.4.2 application image
 found a startup serial configuration for USART0 at 115200 baud with TX and RX
 route location **0** and no hardware flow-control route enabled. This differs
-from the experimental NCP's photo-based location-22 setting. The code path
+from the experimental NCP's photo-based location-22 setting. [Silicon Labs'
+pin map](https://docs.silabs.com/mcu/5.6/efr32mg12/group-EFR32MG12P-AF-Pins)
+maps location 0 to PA0/PA1 and location 22 to PD14/PD15. The code path
 has been traced through its serial initializer, but we have not yet verified
 on a working board that this is the CP2102N connection or ruled out later
 route changes. The experimental image should not be flashed on this evidence
-alone.
+alone. The same startup path declares a 38.4 MHz clock frequency, consistent
+with the experimental build, but we have not established the oscillator tuning.
 
 Useful contributions would be a board schematic, continuity measurements
 of the radio UART and SWD signals, or a tested serial bootloader-entry and
