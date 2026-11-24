@@ -50,8 +50,23 @@ python3 zigbee_serial_probe.py --port /dev/ttyUSB0 --query --duration 8
 
 Query mode sends exactly two frames: the ping `aa 00 20 00 36`, captured from
 Futurehome's `zigbee-ad` 3.8.4, and the version request `aa 00 20 02 34`,
-**inferred** from that binary's request framing. It sends no bootloader or
-firmware commands. The version frame and the radio's required handshake have
-not yet been confirmed against a working stock radio, so no response would
-not establish that the radio is faulty. Review captured bytes before sharing
-them publicly; a response could contain device-specific information.
+originally inferred from that binary. Both received valid replies on a
+working stock radio in [issue #1](https://github.com/tskaard/futurehome-cube2v0-haos/issues/1):
+
+```text
+TX ping:     aa 00 20 00 36
+RX ACK:      aa 03 80 0d 00 00 00 c6
+RX ping:     aa 01 40 00 04 11
+TX version:  aa 00 20 02 34
+RX ACK:      aa 03 80 0d 00 00 02 c4
+RX version:  aa 09 40 02 00 02 04 01 0c 1f 06 09 02 c8
+```
+
+That contributor's stock radio reported version 1.12.31 and paired a sensor
+using the factory protocol. Our test hub previously reported 1.14.2; the
+reason for the difference is unknown. The contributor's probe sent no host
+ACK for the two requests. Query mode sends no bootloader or firmware commands.
+The factory protocol still needs a Home Assistant integration, or the radio
+needs a verified compatible NCP firmware, before Home Assistant can use it as
+a Zigbee coordinator. Review captured bytes before sharing them publicly; a
+response could contain device-specific information.

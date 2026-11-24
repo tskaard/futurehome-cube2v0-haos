@@ -2,7 +2,7 @@
 """Log the Cube's Zigbee UART, optionally sending only two status queries.
 
 This tool does not access GPIO, firmware files, or Home Assistant. Its default
-mode only reads the serial port. --query sends a ping and an inferred version
+mode only reads the serial port. --query sends a ping and a version
 request; it cannot enter the bootloader or upload firmware.
 """
 
@@ -15,7 +15,7 @@ import time
 
 
 PING = bytes.fromhex("aa 00 20 00 36")  # Captured from Futurehome zigbee-ad 3.8.4.
-VERSION = bytes.fromhex("aa 00 20 02 34")  # Inferred from zigbee-ad 3.8.4 code.
+VERSION = bytes.fromhex("aa 00 20 02 34")  # Confirmed on a stock radio in issue #1.
 
 
 def configure_serial(fd: int) -> None:
@@ -39,7 +39,7 @@ def run(port: str, duration: float, query: bool) -> None:
     try:
         configure_serial(fd)
         start = time.monotonic()
-        pending = [(1.0, "ping", PING), (3.0, "version (inferred)", VERSION)] if query else []
+        pending = [(1.0, "ping", PING), (3.0, "version", VERSION)] if query else []
         print(f"Listening on {port} at 115200 8N1, flow control off", flush=True)
         while True:
             elapsed = time.monotonic() - start
@@ -68,7 +68,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", required=True, help="Cube CP2102N serial path, e.g. /dev/ttyUSB0")
     parser.add_argument("--duration", type=float, default=8.0, help="Capture seconds (default: 8)")
-    parser.add_argument("--query", action="store_true", help="Send only ping and inferred version query")
+    parser.add_argument("--query", action="store_true", help="Send only ping and version queries")
     args = parser.parse_args()
     if args.duration <= 0 or (args.query and args.duration < 4):
         parser.error("duration must be positive, and at least 4 seconds with --query")
