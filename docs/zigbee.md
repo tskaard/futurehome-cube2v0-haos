@@ -30,8 +30,18 @@ maps location 0 to PA0/PA1 and location 22 to PD14/PD15. The code path
 has been traced through its serial initializer, but we have not yet verified
 on a working board that this is the CP2102N connection or ruled out later
 route changes. The experimental image should not be flashed on this evidence
-alone. The same startup path declares a 38.4 MHz clock frequency, consistent
-with the experimental build, but we have not established the oscillator tuning.
+alone. The factory startup path declares 38.4 MHz and initializes the HFXO
+with startup CTUNE 160. For steady-state CTUNE it reads a valid per-chip
+calibration value when available, with 282 as its fallback. The actual value
+on any individual Cube cannot be determined from this application image.
+
+The available Futurehome GBL is an application update and contains no
+bootloader image. The resident bootloader's UART and GPIO activation settings
+cannot be recovered from that file. The factory application could invoke a
+serial update while it was responsive; once our test radio became silent,
+reset attempts with PA4 held both low and high produced no bootloader response.
+These attempts do not rule out another recovery method. [Silicon Labs documents
+separate bootloader pin configuration](https://docs.silabs.com/mcu-bootloader/3.2.2/bootloader-user-guide-gsdk-4/07-configuring-the-gecko-bootloader).
 
 Useful contributions would be a board schematic, continuity measurements
 of the radio UART and SWD signals, or a tested serial bootloader-entry and
