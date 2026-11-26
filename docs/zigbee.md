@@ -66,22 +66,37 @@ Cube-specific image was generated with USART0 on PA0/PA1 at 115200 baud,
 without hardware flow control, yet remained silent. Its failure may be in
 startup or another configuration detail; the cause is not established.
 
-The same factory startup path also rules out one startup suspect. Before HFXO
-setup, it unconditionally calls Silicon Labs' DC-DC initializer with DC-DC to
-DVDD, low-noise mode, 1.8 V output, analog peripherals powered from the
-DC-DC, and a 1 µF output-capacitor setting. The flashed Cube-specific image
-uses the GSDK 4.5 Series 1 defaults, which match on all of those points.
-It differs only in the nominal EM0 load (5 mA rather than 15 mA) and the
-reverse-current setting (high-efficiency preset rather than 160). Those
-values tune efficiency, not whether the chip starts. The radio board
-therefore has a working DC-DC circuit, and a DC-DC mismatch does not explain
-either silent image. Other offline checks also found no conflict. The flashed image's
-stack and RAM use fit the 256 kB part, and its code ends below its NVM3
-region. That region is at the same flash address (`0xF7000`) as the factory
-image's. The image sets the radio PA supply to 3.3 V; the factory value was
-not recovered, but it affects transmit power rather than UART startup.
-Further progress needs on-chip debugging through SWD rather than more
-offline comparison.
+Before HFXO setup, the factory startup path unconditionally calls Silicon
+Labs' DC-DC initializer. Its settings structure is byte-for-byte identical to
+the one in the flashed Cube-specific image: DC-DC to DVDD, low-noise mode,
+1.8 V, 15 mA nominal EM0 load, 200 mA maximum, analog peripherals on the
+DC-DC, 160 mA reverse-current threshold, and the 4.7 µF compensator setting.
+The flashed image's stack and RAM use fit the 256 kB part. Its code ends
+below its NVM3 region, which is at the same flash address (`0xF7000`) as the
+factory image's.
+
+## SWD findings (second Cube, 2026-11-27)
+
+An ST-Link V2 clone (firmware V2J17, OpenOCD HLA mode) connected to the radio
+through the SWD contacts described below, with the hub powered normally. The
+chip identified as an EFR32MG12P433 and **is not debug-locked**. The silent
+radio can therefore be read and reflashed through SWD. A read-only dump showed:
+
+- the application area holds the flashed Cube-specific image byte for byte,
+  so the serial update itself worked;
+- a resident bootloader of about 14.5 kB at `0x0FE10000` with no text strings,
+  so it is not Silicon Labs' menu-driven UART XMODEM bootloader.
+
+Halting the CPU repeatedly found it at the same address every time. It sat
+in `EMU_DCDCInit`, in the GSDK 4.5 DC-DC_E204 errata loop, which waits without
+a timeout for the DC-DC "low-noise running" flag. EMU registers showed
+low-noise mode requested (`DCDCCTRL = 0x31`), but the low-noise running flag
+was clear. The NFET over-current-limit flag was set (`EMU_IF = 0x20060000`).
+The image therefore hangs before it initializes the UART, which explains the
+silence. The factory 2.4.2 image waits for the same flag with the same
+settings structure and does start. The difference must lie in the DC-DC
+register sequence of the newer SDK or in earlier startup state; it has not
+been identified yet.
 
 The available Futurehome GBL is an application update and contains no
 bootloader image. The resident bootloader's UART and GPIO activation settings
@@ -95,10 +110,19 @@ running application to start its bootloader. The `red-bee` package is a Huawei
 LTE modem controller, not a Zigbee recovery tool. Neither provides a verified
 way to enter this bootloader when the radio application is silent.
 
-Useful contributions would be a board schematic, continuity measurements
-of the radio UART and SWD signals, or a tested serial bootloader-entry and
-recovery method. The EFR32MG12 uses PF0 for SWCLK and PF1 for SWDIO, but
-their locations on the Cube's module edge are not yet mapped. Do not infer
+Continuity measurements on an unpowered CUBE-2V0-EU have since mapped the
+radio sub-board's (U9) castellated edge contacts to EFR32MG12 QFN48 pins.
+Orient the board so the chip marking reads upright. On the edge away from
+the CP2102N, the third contact from the top is pin 1 (PF0, SWCLK), the fourth
+is pin 2 (PF1, SWDIO), and the eighth is pin 12 (RESETn). On the edge facing
+the CP2102N, the second contact from the bottom is pin 25 (PA0) and the
+third from the bottom is pin 26 (PA1). This matches the factory image's
+USART0 location 0 and gives a physical SWD access point. The connection from
+those PA0/PA1 contacts to the CP2102N, and PA4's contact, are not yet
+measured.
+
+Useful contributions would be a board schematic, a tested serial
+bootloader-entry and recovery method, or SWD readout results. Do not infer
 electrical connections from photos alone.
 
 ## Stock-radio serial probe
