@@ -98,6 +98,24 @@ settings structure and does start. The difference must lie in the DC-DC
 register sequence of the newer SDK or in earlier startup state; it has not
 been identified yet.
 
+Writing the factory 2.4.2 application back through SWD restored the radio:
+it answered the factory ping and reported version 2.4.2. Its live EMU DC-DC
+configuration registers matched the hung image's, apart from undocumented
+bits that appear to be status.
+
+A rebuild with only `SL_DEVICE_INIT_DCDC_BYPASS: 1` added
+(`cube2v0_zigbee_ncp_pa0_pa1_dcdcbypass.yaml`, PA0/PA1, 115200, no flow
+control, CTUNE 282) got past DC-DC setup. It then looped while opening NVM3,
+which still held the factory firmware's objects. After a backup, erasing the
+NVM3 region (`0xF7000`–`0xFFFFF`) let it boot. The radio then answered an ASH
+reset with `RSTACK` (`1a c1 02 0b 0a 52 7e`). Home Assistant's bellows 1.2.1
+completed the EZSP handshake and reported **EZSP protocol version 13**
+(EmberZNet 7.5.1). This is the first onboard-radio EZSP response on a Cube.
+Network formation, device pairing, RF range and the bypass mode's effect on
+power consumption remain untested. The working sequence currently needs SWD:
+flash the application, and erase NVM3 when coming from factory firmware. The
+image remains experimental and is not a supported installation step.
+
 The available Futurehome GBL is an application update and contains no
 bootloader image. The resident bootloader's UART and GPIO activation settings
 cannot be recovered from that file. The factory application could invoke a
