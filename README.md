@@ -12,7 +12,7 @@ is no published installation image or tested automatic OS update feed yet.
 
 | Feature | Status |
 | --- | --- |
-| HAOS boot and Home Assistant onboarding | Tested on one CUBE-2V0-EU |
+| HAOS boot and Home Assistant onboarding | HAOS boot tested on two CUBE-2V0-EU hubs; onboarding tested on one |
 | Ethernet and USB | Working on the test hub |
 | Onboard Z-Wave | Z-Wave JS connects on `/dev/ttyS1`; a Popp & Co wall plug was paired, reported alive, and responded to on/off control |
 | Onboard Zigbee | **Unavailable**; do not flash the experimental Zigbee firmware in this repository's development notes |
@@ -25,17 +25,19 @@ installation of the Z-Wave JS app. Moving the data disk to a 64 GB USB drive
 allowed the app to install. **Plan on a separate USB data drive for this
 version.** The data-disk move erases the selected drive.
 
-## Have a spare Cube?
+## Help with onboard Zigbee
 
-We need another **CUBE-2V0-EU with its original onboard Zigbee radio
-firmware** to test the Zigbee connection and a safe firmware update path. The
-original Cube OS does not need to be working. If you have a hub you can sell
-or give away, or can run a few non-destructive checks on your own hub, please
+We have verified that the factory Zigbee radio answers over the Cube's USB
+serial bridge and that the stock adapter can enter its serial bootloader.
+After an experimental firmware update, the radio no longer answers. The main
+gap is a reliable way to enter the bootloader without a responsive radio
+application, or to access the radio through SWD. If you can provide a Cube
+schematic, map the radio's UART and SWD connections, or test a recovery method
+with suitable equipment, please
 [reach out in the Zigbee hardware issue](https://github.com/tskaard/futurehome-cube2v0-haos/issues/1).
-Please do not post your shipping address or the hub's serial label publicly;
-we can arrange any handoff privately. No Zigbee firmware flashing is needed
-for remote checks. A hub transferred for development may be permanently
-modified or damaged during Zigbee experiments.
+An intact factory-radio hub is also useful for non-destructive comparison.
+Please do not flash any experimental Zigbee image from this project. Do not
+post shipping addresses or serial labels publicly.
 
 ## Start here
 
@@ -51,8 +53,8 @@ Make your own recovery plan before flashing.
 
 The detailed private development log is kept separately from these
 installation instructions. The build in this repository has been run
-successfully once; installation and basic Z-Wave device control were tested
-on one hub.
+successfully once; HAOS booted on two hubs, and installation, onboarding,
+and basic Z-Wave device control were tested on one hub.
 
 See the [onboard Zigbee findings](docs/zigbee.md) if you can help map the
 radio's connections or recovery path.
