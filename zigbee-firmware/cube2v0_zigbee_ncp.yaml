@@ -1,0 +1,49 @@
+# EmberZNet 7.5.1 EZSP NCP for the Futurehome Cube 2v0 (CUBE-2V0-EU) onboard
+# EFR32MG12 radio. USART0 PA0/PA1 at 115200 without flow control (the factory
+# routing), factory HFXO CTUNE fallback, DC-DC in bypass mode (low-noise start
+# fails on this board), and the PA4 bootloader recovery check.
+# EXPERIMENTAL; see docs/zigbee.md.
+name: Futurehome Cube 2v0 Zigbee NCP
+device: EFR32MG12P433F1024GM48
+base_project: src/zigbee_ncp
+filename: "cube2v0-zigbee-ncp-{ezsp_version}"
+sdk: "gecko_sdk:4.5.0"
+toolchain: "12.2.1.20221205"
+
+gbl:
+  fw_type: zigbee_ncp
+  ezsp_version: dynamic
+  baudrate: 115200
+
+sdk_extension:
+  - id: xncp
+    version: 1.0.0
+  - id: xncp_common
+    version: 1.0.0
+
+add_components:
+  - id: xncp_core
+    from: xncp
+  - id: xncp_common_commands
+    from: xncp_common
+
+configuration:
+  SL_IOSTREAM_USART_VCOM_FLOW_CONTROL_TYPE: usartHwFlowControlNone
+  SL_DEVICE_INIT_HFXO_CTUNE: 282
+  SL_DEVICE_INIT_DCDC_BYPASS: 1
+
+c_defines:
+  SL_IOSTREAM_USART_VCOM_BAUDRATE: 115200
+  SL_IOSTREAM_USART_VCOM_FLOW_CONTROL_TYPE: usartHwFlowControlNone
+  SL_IOSTREAM_USART_VCOM_PERIPHERAL: USART0
+  SL_IOSTREAM_USART_VCOM_PERIPHERAL_NO: 0
+  SL_IOSTREAM_USART_VCOM_TX_PORT: gpioPortA
+  SL_IOSTREAM_USART_VCOM_TX_PIN: 0
+  SL_IOSTREAM_USART_VCOM_TX_LOC: 0
+  SL_IOSTREAM_USART_VCOM_RX_PORT: gpioPortA
+  SL_IOSTREAM_USART_VCOM_RX_PIN: 1
+  SL_IOSTREAM_USART_VCOM_RX_LOC: 0
+  SL_IOSTREAM_USART_VCOM_RX_BUFFER_SIZE: 128
+
+sdk_patches:
+  - cube2v0_recovery_pin.patch

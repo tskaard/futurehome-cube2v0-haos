@@ -15,7 +15,7 @@ is no published installation image or tested automatic OS update feed yet.
 | HAOS boot and Home Assistant onboarding | HAOS boot tested on two CUBE-2V0-EU hubs; onboarding tested on one |
 | Ethernet and USB | Working on the test hub |
 | Onboard Z-Wave | Z-Wave JS connects on `/dev/ttyS1`; a Popp & Co wall plug was paired, reported alive, and responded to on/off control |
-| Onboard Zigbee | **Experimental**: works with ZHA on one hub after an SWD-flashed custom firmware; no end-user install path yet, see [Zigbee findings](docs/zigbee.md) |
+| Onboard Zigbee | **Experimental**: works with ZHA on one hub with a custom firmware; [serial installer and firmware](docs/zigbee.md#install-over-serial) published, tested on one hub |
 | External USB Zigbee adapter | Possible USB option, not tested as part of this port |
 | OS updates | Official HAOS OS updates are unavailable for this custom board |
 
@@ -30,12 +30,12 @@ version.** The data-disk move erases the selected drive.
 The onboard Zigbee radio now works with ZHA on one development hub. A
 Cube-specific EmberZNet firmware was flashed through the radio's SWD debug
 contacts; ZHA formed a network and a light bulb paired and responded.
-A serial install that needs no debugger has also worked on that hub, from
-the factory radio firmware. The installer and firmware are not published
-yet, so this is **not** an installation step. See the [onboard Zigbee findings](docs/zigbee.md)
-for details and the radio contact map. Please do not flash any experimental
-Zigbee image over serial: earlier attempts left two radios silent, and a
-bad image cannot be recovered over serial. Questions and test reports are welcome in the
+An experimental installer and firmware that need no debugger are published
+in [Install over serial](docs/zigbee.md#install-over-serial). They have been
+tested on one hub only. See the [onboard Zigbee findings](docs/zigbee.md)
+for details and the radio contact map. Do not flash other Zigbee images over
+serial: earlier attempts left two radios silent, and an image without the
+PA4 recovery check cannot be recovered over serial. Questions and test reports are welcome in the
 [Zigbee hardware issue](https://github.com/tskaard/futurehome-cube2v0-haos/issues/1).
 Do not post shipping addresses or serial labels publicly.
 

@@ -1,0 +1,53 @@
+--- a/platform/Device/SiliconLabs/EFR32MG12P/Source/system_efr32mg12p.c	2026-11-27 01:54:42.841311786 +0100
++++ b/platform/Device/SiliconLabs/EFR32MG12P/Source/system_efr32mg12p.c	2026-11-27 01:54:42.848677516 +0100
+@@ -30,6 +30,7 @@
+ 
+ #include <stdint.h>
+ #include "em_device.h"
++#include <stdbool.h>
+ 
+ /*******************************************************************************
+  ******************************   DEFINES   ************************************
+@@ -289,8 +290,42 @@
+  *   and any data has been initialized. For this reason, it cannot do any
+  *   initialization of variables etc.
+  ******************************************************************************/
++/* Futurehome Cube 2v0: pin-triggered bootloader recovery.
++ *
++ * The radio's resident Gecko Bootloader has no GPIO activation pin, so an
++ * application that hangs during startup cannot be reflashed over serial.
++ * This check runs first after every reset, before C runtime and device
++ * initialisation: if PA4 (driven by the hub through GPIO1_A3/R154) reads low
++ * with the internal pull-up enabled, request the bootloader with the standard
++ * Gecko reset cause (BOOTLOAD 0x0202, signature 0xF00F) and reset. The hub
++ * leaves PA4 undriven, so a normal boot reads high. Registers only: no RAM
++ * variables are initialised yet.
++ */
++static void cube2v0_recovery_pin_check(void)
++{
++  uint32_t model = GPIO->P[0].MODEL;
++  uint32_t dout = GPIO->P[0].DOUT;
++
++  CMU->HFBUSCLKEN0 |= CMU_HFBUSCLKEN0_GPIO;
++  GPIO->P[0].DOUT = dout | (1UL << 4);
++  GPIO->P[0].MODEL = (model & ~_GPIO_P_MODEL_MODE4_MASK)
++                             | GPIO_P_MODEL_MODE4_INPUTPULL;
++  for (volatile uint32_t i = 0; i < 2000UL; i++) {
++  }
++  bool low = (GPIO->P[0].DIN & (1UL << 4)) == 0UL;
++  GPIO->P[0].MODEL = model;
++  GPIO->P[0].DOUT = dout;
++
++  if (low) {
++    *(volatile uint32_t *)SRAM_BASE = 0xF00F0202UL;
++    NVIC_SystemReset();
++  }
++}
++
+ void SystemInit(void)
+ {
++  cube2v0_recovery_pin_check();
++
+ #if defined (__VTOR_PRESENT) && (__VTOR_PRESENT == 1U)
+   SCB->VTOR = (uint32_t)(&__VECTOR_TABLE[0]);
+ #endif

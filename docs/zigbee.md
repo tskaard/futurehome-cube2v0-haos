@@ -5,9 +5,9 @@
 - The onboard Zigbee radio **works experimentally** with ZHA on one hub. It
   needs a custom EmberZNet firmware flashed through the radio's SWD contacts,
   so installing it requires a debug probe.
-- A serial install path (no debugger) **worked end to end on one hub**: from
-  the factory firmware, and again from the EmberZNet firmware for a later
-  update. The installer and firmware are not published yet.
+- An experimental firmware and a serial installer (no debugger needed) are
+  published; see [Install over serial](#install-over-serial). This was
+  tested on one hub only.
 - The current experimental firmware includes a **PA4 recovery check**: the
   hub can force the radio into its bootloader, so a later bad image can be
   replaced over serial. This was tested on one hub.
@@ -130,6 +130,55 @@ What happened on the hubs:
 - An earlier image guessed PD14/PD15 from photos. The guess was wrong and
   that image was never flashed.
 
+## Install over serial
+
+**Experimental, tested on one hub.** This replaces Futurehome's radio
+firmware. Returning to the factory radio firmware has not been tested. You
+need host shell access with Docker, for example the developer SSH access on
+port 22222 described in the Home Assistant developer docs.
+
+Release files (GitHub release `zigbee-ncp-7.5.1.0-r1`):
+
+- `zigbee_install.py`: the installer (Python standard library; recovery mode
+  also uses `gpiod`, which the Home Assistant image includes).
+- `cube2v0-zigbee-ncp-7.5.1.0-r1-factory-migration.gbl`: first install from
+  the factory firmware. It also erases the factory NVM3 data.
+- `cube2v0-zigbee-ncp-7.5.1.0-r1.gbl`: later updates; keeps the Zigbee network.
+- `SHA256SUMS`.
+
+First install, from the host shell:
+
+```sh
+mkdir -p /mnt/data/cube-zigbee && cd /mnt/data/cube-zigbee
+base=https://github.com/tskaard/futurehome-cube2v0-haos/releases/download/zigbee-ncp-7.5.1.0-r1
+for f in zigbee_install.py cube2v0-zigbee-ncp-7.5.1.0-r1-factory-migration.gbl \
+         cube2v0-zigbee-ncp-7.5.1.0-r1.gbl SHA256SUMS; do curl -fLO "$base/$f"; done
+sha256sum -c SHA256SUMS
+ha core stop
+image=$(docker inspect -f '{{.Config.Image}}' homeassistant)
+docker run --rm -v /mnt/data/cube-zigbee:/w --device /dev/ttyUSB0 \
+  --entrypoint python3 "$image" /w/zigbee_install.py --from factory \
+  /w/cube2v0-zigbee-ncp-7.5.1.0-r1-factory-migration.gbl
+ha core start
+```
+
+The upload takes about a minute. The installer stops before writing anything
+if the factory firmware does not answer. Then add the **Zigbee Home
+Automation** integration with serial port `/dev/ttyUSB0`, radio type EZSP,
+115200 baud and no flow control.
+
+Later updates, with Home Assistant Core stopped, use `--from ezsp` and the
+non-migration file. If the firmware stops answering, use `--from recovery`
+and add `--device /dev/gpiochip1` to the `docker run` command. This holds
+PA4 low through a radio reset (see [PA4 recovery check](#pa4-recovery-check)).
+
+Test coverage on the development hub:
+
+- `--from factory` was tested with an otherwise identical build without the
+  recovery check.
+- `--from ezsp` and `--from recovery` were tested with this release.
+- In each case the radio then answered EZSP, and ZHA worked after the update.
+
 ## Current experimental firmware and SWD procedure
 
 With the DC-DC bypass build flashed over SWD and NVM3 erased:
@@ -139,8 +188,8 @@ With the DC-DC bypass build flashed over SWD and NVM3 erased:
 - a Zigbee light bulb paired and was controlled.
 
 **Untested:** RF range, larger networks, long-term stability, and the power
-impact of DC-DC bypass. The firmware image is not distributed here and is
-not an installation step.
+impact of DC-DC bypass. Build inputs are in
+[`zigbee-firmware/`](../zigbee-firmware/).
 
 ### PA4 recovery check
 
@@ -201,7 +250,8 @@ Zigbee network key. Back it up, and do not share dumps publicly.
 
 - Optional: test whether DC-DC low-noise mode starts after a true power-on
   reset; bypass works and is the current choice.
-- Publish the serial installer and a firmware image, with clear warnings.
+- Tests on more hubs, including a first install from the factory firmware
+  with this release.
 - Recover hub 1, which still holds the silent generic image.
 - RF, range and stability tests.
 

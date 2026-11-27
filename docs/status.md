@@ -20,9 +20,10 @@ Futurehome's own serial protocol, which ZHA cannot use. A Cube-specific
 EmberZNet firmware works with ZHA on one test hub: a network formed and a
 light bulb paired. On that hub it was installed both through the radio's SWD
 contacts and over the serial port without a debugger. The installer and
-firmware are not published yet, so this is not part of installation; see
-[the Zigbee findings](zigbee.md). Until they are, use a separate supported
-USB Zigbee coordinator if you need Zigbee; that option has
+firmware are published as an experimental option, separate from the main
+installation; see [Install over serial](zigbee.md#install-over-serial). A
+separate supported USB Zigbee coordinator is the conservative choice; that
+option has
 not been validated on this Cube.
 
 ## Storage and updates
