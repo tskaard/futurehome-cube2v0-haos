@@ -2,9 +2,10 @@
 
 ## Status
 
-- The onboard Zigbee radio **works experimentally** with ZHA on one hub. It
-  needs a custom EmberZNet firmware flashed through the radio's SWD contacts,
-  so installing it requires a debug probe.
+- The onboard Zigbee radio **works experimentally** with ZHA on one hub,
+  with a custom EmberZNet firmware.
+- Installing HAOS does **not** change the radio. The radio has its own flash
+  and keeps Futurehome's firmware until you replace it.
 - An experimental firmware and a serial installer (no debugger needed) are
   published; see [Install over serial](#install-over-serial). This was
   tested on one hub only.
@@ -133,9 +134,16 @@ What happened on the hubs:
 ## Install over serial
 
 **Experimental, tested on one hub.** This replaces Futurehome's radio
-firmware. Returning to the factory radio firmware has not been tested. You
-need host shell access with Docker, for example the developer SSH access on
-port 22222 described in the Home Assistant developer docs.
+firmware. Returning to the factory radio firmware has not been tested.
+
+Do this after HAOS is installed and onboarded, and before adding ZHA. You
+need a root shell on the HAOS host, where the `ha` and `docker` commands
+work. The add-on terminals do not give this by default. One way is the
+developer SSH access on port 22222: put your public key in a file named
+`authorized_keys` on a USB stick labelled `CONFIG`, import it under
+**Settings → System → Hardware → ⋮ → Import from USB** (or reboot with the
+stick attached), then run `ssh root@homeassistant.local -p 22222`. See
+[Debugging the Home Assistant Operating System](https://developers.home-assistant.io/docs/operating-system/debugging/).
 
 Release files (GitHub release `zigbee-ncp-7.5.1.0-r1`):
 

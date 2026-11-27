@@ -75,3 +75,10 @@ connected and reached `Ready`; one Popp & Co wall plug was subsequently
 paired and switched on and off through Home Assistant. If the controller
 contains an existing network, back it up before resetting or replacing
 anything.
+
+## Optional: onboard Zigbee
+
+Installing HAOS does not touch the Zigbee radio; it still runs Futurehome's
+firmware, which ZHA cannot use. To use it with ZHA, follow the experimental
+[serial install](zigbee.md#install-over-serial) and then add the Zigbee Home
+Automation integration on `/dev/ttyUSB0`.
