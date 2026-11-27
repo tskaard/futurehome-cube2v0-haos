@@ -15,12 +15,14 @@ secure inclusion, and a larger network remain untested. Resetting a Z-Wave
 network discards its node associations. Keep a controller backup if you need
 to preserve an existing network.
 
-The built-in Zigbee radio is **not usable with ZHA in this version**. The
-factory radio application spoke Futurehome's serial protocol. An
-experimental firmware flash left the test radio silent. The Cube-specific
-firmware experiment remains unverified and is not part of installation.
-Use a separate supported USB Zigbee coordinator if you need Zigbee now;
-that option has not been validated on this Cube.
+The built-in Zigbee radio is **experimental**. Its factory firmware speaks
+Futurehome's own serial protocol, which ZHA cannot use. A Cube-specific
+EmberZNet firmware, flashed through the radio's SWD contacts, works with ZHA
+on one test hub: a network formed and a light bulb paired. Installing it still
+needs an SWD debugger, so it is not part of installation yet; see
+[the Zigbee findings](zigbee.md). Until a serial install path exists, use a
+separate supported USB Zigbee coordinator if you need Zigbee; that option has
+not been validated on this Cube.
 
 ## Storage and updates
 
