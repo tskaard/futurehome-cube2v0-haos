@@ -45,9 +45,12 @@ Do not post shipping addresses or serial labels publicly.
 2. [Build the image](docs/build.md) from the pinned HAOS revision.
 3. [Install it on the Cube](docs/install.md), then move the data disk to USB.
 4. Select `/dev/ttyS1` when configuring the Z-Wave JS app.
-5. Optional, experimental: to use the onboard Zigbee radio with ZHA, run the
-   [serial installer](docs/zigbee.md#install-over-serial). Installing HAOS
-   does not change the radio, and its factory firmware does not work with ZHA.
+5. Optional, experimental: to use the onboard Zigbee radio with ZHA, replace
+   its firmware. Installing HAOS alone does not change the radio, and its
+   factory firmware does not work with ZHA. The image can do this at boot if
+   you [opt in](docs/zigbee.md#automatic-install-from-the-haos-image-opt-in),
+   or you can run the [serial installer](docs/zigbee.md#install-over-serial)
+   yourself.
 
 Installing an image overwrites the Cube's internal eMMC. The original
 Futurehome installation will be lost. Our original RockUSB backup was only

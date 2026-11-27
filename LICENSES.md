@@ -20,4 +20,5 @@ to those file-level exceptions. It does not grant rights to third-party
 trademarks, proprietary factory firmware, or binary blobs downloaded when
 building a full OS image. Zigbee firmware files attached to GitHub releases
 are built from the Silicon Labs Gecko SDK and EmberZNet and are subject to
-Silicon Labs' license terms for those components.
+Silicon Labs' license terms for those components. Images built from this
+repository include those files on the boot partition.

@@ -79,6 +79,7 @@ anything.
 ## Optional: onboard Zigbee
 
 Installing HAOS does not touch the Zigbee radio; it still runs Futurehome's
-firmware, which ZHA cannot use. To use it with ZHA, follow the experimental
-[serial install](zigbee.md#install-over-serial) and then add the Zigbee Home
-Automation integration on `/dev/ttyUSB0`.
+firmware, which ZHA cannot use. To use it with ZHA, either enable the
+image's [automatic install](zigbee.md#automatic-install-from-the-haos-image-opt-in)
+or follow the experimental [serial install](zigbee.md#install-over-serial).
+Then add the Zigbee Home Automation integration on `/dev/ttyUSB0`.

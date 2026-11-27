@@ -1,0 +1,5 @@
+# Onboard Zigbee firmware bundled on the boot partition (haos-hook.sh).
+# Release: https://github.com/tskaard/futurehome-cube2v0-haos/releases/tag/zigbee-ncp-7.5.1.0-r1
+d1a63e6ee31488d349f87f059f09341bf972f126581a54963b0b206e8d8d91b1  zigbee_install.py
+558e3e50182790ead2a072fd381be78df5b836c85995734ad944354011808456  cube2v0-zigbee-ncp-7.5.1.0-r1-factory-migration.gbl
+9d2f2a881362e1a31c62202edb5cdad7382ce6b3159c563a220ca8780d645c29  cube2v0-zigbee-ncp-7.5.1.0-r1.gbl

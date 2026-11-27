@@ -37,6 +37,12 @@ can expand it at first boot. It also accepts an `e2fsck` exit status of 1
 when repairs were made. An earlier shrunk image had an invalid journal and
 was rejected.
 
+The build also downloads the onboard Zigbee firmware and installer from this
+repository's GitHub release and checks them against the hashes in
+`futurehome/cube2v0/zigbee-firmware.sha256`. They are placed on the boot
+partition but are only installed if you opt in; see
+[automatic install](zigbee.md#automatic-install-from-the-haos-image-opt-in).
+
 The build downloads upstream components, including Rockchip boot blobs.
 Those binaries are **not** stored in this repository. See
 [credits and licensing](credits.md) before redistributing a built image.

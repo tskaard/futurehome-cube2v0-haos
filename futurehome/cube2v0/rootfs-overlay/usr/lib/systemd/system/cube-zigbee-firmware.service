@@ -1,0 +1,16 @@
+[Unit]
+Description=Cube onboard Zigbee firmware install (opt-in, experimental)
+Documentation=https://github.com/tskaard/futurehome-cube2v0-haos/blob/main/docs/zigbee.md
+Requires=docker.service
+After=docker.service
+Before=haos-supervisor.service
+RequiresMountsFor=/mnt/boot /mnt/data
+ConditionPathExists=/mnt/boot/zigbee-install.txt
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/cube-zigbee-firmware
+TimeoutStartSec=10min
+
+[Install]
+WantedBy=multi-user.target

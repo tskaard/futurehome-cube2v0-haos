@@ -1,0 +1,140 @@
+#!/bin/sh
+# Opt-in install of the Cube's onboard Zigbee (EFR32MG12) EmberZNet firmware.
+#
+# EXPERIMENTAL. Runs once per boot, before the Supervisor starts, so nothing
+# else holds the radio's serial port. It does nothing unless the file
+# zigbee-install.txt exists on the boot partition (/mnt/boot).
+#
+# - Radio still runs the factory firmware: install the migration GBL, which
+#   also erases the factory NVM3 data.
+# - Radio runs an older bundled firmware installed by this service: update
+#   it through the PA4 recovery check (keeps the Zigbee network).
+# - Bundled firmware already installed: do nothing; the radio is not touched.
+# - Anything else (for example firmware installed by hand): leave it alone.
+#
+# The installer is Python; the HAOS host has none, so it runs inside the
+# preloaded Supervisor image. State is kept in /mnt/data/cube-zigbee-autoinstall.
+
+set -u
+
+ENABLE=/mnt/boot/zigbee-install.txt
+FW=/mnt/boot/cube-zigbee
+STATE=/mnt/data/cube-zigbee-autoinstall
+PORT=/dev/ttyUSB0
+GPIO_RESET=32  # GPIO1_A0, radio nRESET
+GPIO_PA4=35    # GPIO1_A3, radio PA4 recovery check
+
+log() { echo "cube-zigbee: $*"; }
+
+[ -f "$ENABLE" ] || exit 0
+
+migration=$(ls "$FW"/cube2v0-zigbee-ncp-*-factory-migration.gbl 2>/dev/null | head -n 1)
+update=$(ls "$FW"/cube2v0-zigbee-ncp-*.gbl 2>/dev/null | grep -v -- '-factory-migration\.gbl$' | head -n 1)
+if [ ! -f "$FW/zigbee_install.py" ] || [ -z "$migration" ] || [ -z "$update" ]; then
+    log "firmware files missing in $FW; nothing to do"
+    exit 0
+fi
+if ! (cd "$FW" && sha256sum -c -s SHA256SUMS); then
+    log "checksum mismatch in $FW; not touching the radio"
+    exit 1
+fi
+
+mkdir -p "$STATE"
+want=$(sha256sum "$update" | cut -d ' ' -f 1)
+have=$(cat "$STATE/installed" 2>/dev/null || true)
+pending=$(cat "$STATE/pending" 2>/dev/null || true)
+
+if [ "$have" = "$want" ] && [ -z "$pending" ]; then
+    exit 0
+fi
+if [ "$have" = "foreign" ] && [ -z "$pending" ]; then
+    log "radio was not running factory firmware on an earlier boot; leaving it alone"
+    log "(delete $STATE to try again)"
+    exit 0
+fi
+
+for _ in $(seq 60); do
+    [ -c "$PORT" ] && break
+    sleep 1
+done
+if [ ! -c "$PORT" ]; then
+    log "$PORT did not appear; not touching the radio"
+    exit 1
+fi
+
+image=$(docker images --format '{{.Repository}}:{{.Tag}}' \
+        | grep -- '-hassio-supervisor:' | grep -v ':<none>$' | head -n 1)
+if [ -z "$image" ]; then
+    log "Supervisor image not found; cannot run the installer"
+    exit 1
+fi
+
+run_installer() {
+    docker run --rm --network none --entrypoint python3 \
+        -v "$FW:/w:ro" --device "$PORT:$PORT" "$image" \
+        /w/zigbee_install.py --port "$PORT" "$@" 2>&1
+}
+
+gpio() {  # gpio <number> <direction: low|in>
+    [ -d "/sys/class/gpio/gpio$1" ] || echo "$1" > /sys/class/gpio/export
+    echo "$2" > "/sys/class/gpio/gpio$1/direction"
+}
+
+recovery_reset() {
+    # Hold PA4 low through a radio reset: firmware with the recovery check
+    # then jumps straight to the bootloader.
+    gpio "$GPIO_PA4" low
+    gpio "$GPIO_RESET" low
+    sleep 0.2
+    gpio "$GPIO_RESET" in
+    sleep 0.3
+    gpio "$GPIO_PA4" in
+    echo "$GPIO_RESET" > /sys/class/gpio/unexport 2>/dev/null
+    echo "$GPIO_PA4" > /sys/class/gpio/unexport 2>/dev/null
+}
+
+done_ok() {
+    echo "$want" > "$STATE/installed"
+    rm -f "$STATE/pending"
+    sync
+    log "installed $(basename "$update" .gbl)"
+    exit 0
+}
+
+# Decide what to upload. "pending" survives an interrupted install, so the
+# next boot retries with the same kind of file.
+if [ -z "$have" ] || [ "$pending" = migrate ]; then
+    # Factory firmware? The installer stops before writing if it gets no reply.
+    log "checking for factory radio firmware"
+    [ -n "$pending" ] || { echo migrate > "$STATE/pending"; sync; }
+    out=$(run_installer --from factory "/w/$(basename "$migration")")
+    status=$?
+    echo "$out" | sed 's/^/cube-zigbee: /'
+    [ $status -eq 0 ] && done_ok
+    if [ -z "$pending" ] && echo "$out" | grep -q 'no reply to ping'; then
+        echo foreign > "$STATE/installed"
+        rm -f "$STATE/pending"
+        log "radio does not run the factory firmware; leaving it alone"
+        exit 0
+    fi
+    # The factory firmware answered but the upload failed, or an earlier
+    # migration was interrupted: retry through the bootloader. The factory
+    # NVM3 data may remain, so keep using the migration file.
+    file=$migration
+    echo migrate > "$STATE/pending"
+else
+    # Older firmware installed by this service: update, keeping the network.
+    file=$update
+    echo update > "$STATE/pending"
+fi
+sync
+
+log "entering the radio bootloader through PA4"
+recovery_reset
+out=$(run_installer --from bootloader "/w/$(basename "$file")")
+status=$?
+echo "$out" | sed 's/^/cube-zigbee: /'
+[ $status -eq 0 ] && done_ok
+
+log "install did not complete; it will be retried on the next boot"
+exit 1

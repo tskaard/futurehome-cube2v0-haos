@@ -187,6 +187,50 @@ Test coverage on the development hub:
 - `--from ezsp` and `--from recovery` were tested with this release.
 - In each case the radio then answered EZSP, and ZHA worked after the update.
 
+### Automatic install from the HAOS image (opt-in)
+
+Images built from this repository put the same release files on the boot
+partition (folder `cube-zigbee/`) and include a service,
+`cube-zigbee-firmware`, that can install them at boot without a host shell.
+It does nothing unless a file named `zigbee-install.txt` exists at the root
+of the boot partition. Create it in one of these ways:
+
+- before building: `touch futurehome/cube2v0/zigbee-install.txt` in this
+  repository, before copying the board files into the HAOS tree;
+- after installing, from the host shell: `touch /mnt/boot/zigbee-install.txt`,
+  then reboot.
+
+When enabled, the service runs at every boot, before the Supervisor starts,
+so nothing else uses the serial port:
+
+- Factory radio firmware: installs the migration file. This takes about a
+  minute and delays Home Assistant's start once.
+- Bundled firmware already installed by the service: does nothing and does
+  not touch the radio.
+- Older firmware installed by the service: updates it through the PA4
+  recovery check, keeping the Zigbee network.
+- Anything else, for example firmware installed by hand: leaves the radio
+  alone and remembers that. Delete `/mnt/data/cube-zigbee-autoinstall` to
+  make it check again.
+- An interrupted install is retried on the next boot.
+
+Afterwards add ZHA as described above. The service logs to the host journal:
+**Settings → System → Logs → Host**, or `journalctl -u cube-zigbee-firmware`
+from the host shell.
+
+Test status on the development hub: the image builds with the service
+enabled and the files on the boot partition. The service script, run by hand
+on the hub, correctly:
+
+- left hand-installed firmware alone;
+- finished an interrupted first install from the bootloader;
+- did nothing when the bundled firmware was already installed;
+- updated through PA4.
+
+ZHA worked afterwards. **Not yet tested:** a migration from factory firmware
+by the service itself, and a real first boot of the image with the service
+running under systemd.
+
 ## Current experimental firmware and SWD procedure
 
 With the DC-DC bypass build flashed over SWD and NVM3 erased:
