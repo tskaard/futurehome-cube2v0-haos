@@ -34,8 +34,8 @@ Installing it currently needs an SWD debugger and a few manual steps, so it
 is **not** an installation step yet. We are working on a serial update path
 that needs no debugger. See the [onboard Zigbee findings](docs/zigbee.md)
 for details and the radio contact map. Please do not flash any experimental
-Zigbee image over serial: an earlier attempt left two radios silent until
-SWD recovery. Questions and test reports are welcome in the
+Zigbee image over serial: earlier attempts left two radios silent, and a
+bad image cannot be recovered over serial. Questions and test reports are welcome in the
 [Zigbee hardware issue](https://github.com/tskaard/futurehome-cube2v0-haos/issues/1).
 Do not post shipping addresses or serial labels publicly.
 
@@ -55,9 +55,6 @@ The detailed private development log is kept separately from these
 installation instructions. The build in this repository has been run
 successfully once; HAOS booted on two hubs, and installation, onboarding,
 and basic Z-Wave device control were tested on one hub.
-
-See the [onboard Zigbee findings](docs/zigbee.md) for the radio contact map,
-SWD results and the current experimental firmware status.
 
 ## Project layout
 
