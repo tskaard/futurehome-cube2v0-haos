@@ -17,12 +17,12 @@ to preserve an existing network.
 
 The built-in Zigbee radio is **experimental**. Its factory firmware speaks
 Futurehome's own serial protocol, which ZHA cannot use. A Cube-specific
-EmberZNet firmware, flashed through the radio's SWD contacts, works with ZHA
-on one test hub: a network formed and a light bulb paired. Installing it still
-needs an SWD debugger (a serial path is decoded but untested), so it is not
-part of installation yet; see
-[the Zigbee findings](zigbee.md). Until a serial install path exists, use a
-separate supported USB Zigbee coordinator if you need Zigbee; that option has
+EmberZNet firmware works with ZHA on one test hub: a network formed and a
+light bulb paired. On that hub it was installed both through the radio's SWD
+contacts and over the serial port without a debugger. The installer and
+firmware are not published yet, so this is not part of installation; see
+[the Zigbee findings](zigbee.md). Until they are, use a separate supported
+USB Zigbee coordinator if you need Zigbee; that option has
 not been validated on this Cube.
 
 ## Storage and updates

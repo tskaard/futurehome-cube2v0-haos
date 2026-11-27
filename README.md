@@ -30,9 +30,9 @@ version.** The data-disk move erases the selected drive.
 The onboard Zigbee radio now works with ZHA on one development hub. A
 Cube-specific EmberZNet firmware was flashed through the radio's SWD debug
 contacts; ZHA formed a network and a light bulb paired and responded.
-Installing it currently needs an SWD debugger and a few manual steps, so it
-is **not** an installation step yet. We are working on a serial update path
-that needs no debugger. See the [onboard Zigbee findings](docs/zigbee.md)
+A serial install that needs no debugger has also worked on that hub, from
+the factory radio firmware. The installer and firmware are not published
+yet, so this is **not** an installation step. See the [onboard Zigbee findings](docs/zigbee.md)
 for details and the radio contact map. Please do not flash any experimental
 Zigbee image over serial: earlier attempts left two radios silent, and a
 bad image cannot be recovered over serial. Questions and test reports are welcome in the

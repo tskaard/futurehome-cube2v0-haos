@@ -5,9 +5,10 @@
 - The onboard Zigbee radio **works experimentally** with ZHA on one hub. It
   needs a custom EmberZNet firmware flashed through the radio's SWD contacts,
   so installing it requires a debug probe.
-- A serial install path (no debugger) has been decoded from the factory
-  firmware and bootloader, but is **untested** end to end.
-- **Do not flash any experimental image over serial yet.** A bad image
+- A serial install path (no debugger) **worked end to end on one hub**: from
+  the factory firmware, and again from the EmberZNet firmware for a later
+  update. The installer and firmware are not published yet.
+- **Do not flash any other experimental image over serial.** A bad image
   cannot be recovered over serial; it needs SWD.
 - The factory radio firmware speaks Futurehome's own serial protocol, not
   EZSP, so ZHA cannot use it.
@@ -44,8 +45,9 @@ Both were confirmed by disassembling an SWD dump.
 ### Application
 
 - The factory radio app speaks Futurehome's own framed serial protocol, not
-  EZSP. Frames are `AA len type cmd payload checksum`; the checksum is the
-  negative byte sum. See the probe section below for examples.
+  EZSP. Frames are `AA len type cmd payload checksum`; the checksum makes the
+  whole frame, including the leading `AA`, sum to zero modulo 256. See the
+  probe section below for examples.
 - It uses USART0 on PA0/PA1 at 115200 baud, no flow control.
 - Its startup declares a 38.4 MHz HFXO with startup CTUNE 160. Steady-state
   CTUNE comes from per-chip calibration, with 282 as fallback.
@@ -65,13 +67,15 @@ Both were confirmed by disassembling an SWD dump.
 - There is **no GPIO activation pin and no boot-time window**. An
   application that hangs during startup cannot be recovered over serial; it
   needs SWD.
-- EmberZNet NCP's EZSP `launchStandaloneBootloader` also enters it.
+- EmberZNet NCP's EZSP `launchStandaloneBootloader` also enters it, but only
+  with mode 1 (normal); mode 0 is accepted and does nothing.
 - It accepts GBL program data anywhere from 0x0 to 0x100000, erasing 2 KiB
   pages before writing. Signatures are not enforced.
 
-Serial protocol (decoded; not yet tested end to end on hardware):
+Serial protocol (tested end to end on one hub):
 
-1. Host pings: `aa 00 20 00 36`.
+1. From the factory app, the host sends `aa 00 20 06 30`; the app replies
+   `aa 01 40 06 00 0f` and resets into the bootloader.
 2. Bootloader announces "btl ready": `aa 01 80 0a 00 cb`. Host acknowledges
    with `aa 01 40 0a 00 0b`.
 3. Host starts upload: `aa 00 20 07 2f`. Transfer is XMODEM-CRC with
@@ -79,8 +83,10 @@ Serial protocol (decoded; not yet tested end to end on hardware):
 4. On completion the bootloader sends `aa 01 80 08 00 cd`. Host acks with
    `aa 01 40 08 00 0d`. The radio then resets into the new application.
 
-One earlier transfer with Futurehome's own updater completed successfully,
-which matches this protocol.
+A 274 kB GBL took about 47 seconds. Program data in the GBL may target the
+NVM3 area: a second program tag at `0xF7000` with `0x9000` bytes of `0xFF`
+(and a recomputed END-tag CRC32) erased the factory firmware's NVM3 data in
+the same upload, which the EmberZNet firmware needs (see below).
 
 ## Why earlier attempts failed
 
@@ -89,10 +95,19 @@ Two root causes were **confirmed over SWD** on the second hub.
 1. **DC-DC startup hang.** The GSDK 4.5 image hung forever in
    `EMU_DCDCInit`, in the DC-DC errata E204 loop that waits for the
    low-noise "running" flag. This happens before UART init, so the radio was
-   silent. The factory image passes a byte-identical DC-DC init structure
-   and starts fine, so the difference is in the newer SDK's DC-DC sequence.
-   This is still being investigated. Workaround: build with
-   `SL_DEVICE_INIT_DCDC_BYPASS: 1`.
+   silent. Requesting low-noise mode on this board sets the NFET
+   over-current flag and the converter drops to low-power mode instead.
+   The factory firmware runs the same sequence and waits for the same flag.
+   It also hung once it started from a state where low-noise mode was not
+   already requested. It appeared to work otherwise only because its mode
+   setter returns early when low-noise mode is already set. `DCDCCTRL`
+   survives both software and pin resets; only a power cut clears it.
+   Adding the factory firmware's extra errata write (`EMU+0x1A4 |= 0x7C00`)
+   did not help. A test build with a bounded wait timed out and fell back to
+   bypass after both a software reset and a pin reset. Whether low-noise mode
+   ever starts after a true power-on reset is untested. Fix used: build with
+   `SL_DEVICE_INIT_DCDC_BYPASS: 1`, at the cost of somewhat higher power use
+   on a mains-powered hub.
 2. **NVM3 loop.** With DC-DC bypass, the image looped while opening NVM3.
    The factory firmware had nearly filled the same NVM3 area
    (`0xF7000`-`0xFFFFF`, same format). Erasing it fixed the boot. The
@@ -135,7 +150,10 @@ SWD can always recover it.
 - Read first, before writing anything. Use `dump_image` for 0x0 (1 MiB),
   0x0FE10000 (32 KiB bootloader), 0x0FE04000 (lock bits) and 0x0FE00000
   (user data).
-- Flash after `reset halt`. Flashing while the factory app ran failed once.
+- Flash after `reset halt`. Flashing while an application ran failed with
+  `corrupted fifo read pointer`. If `reset halt` times out, an erased first
+  page leaves the radio idling in its bootloader, where a plain `halt` and
+  flash work.
   Use `flash write_image erase <app.bin> 0x0 bin`, then `verify_image`.
 - When coming from factory firmware, erase NVM3 with
   `flash erase_address 0xF7000 0x9000`.
@@ -147,10 +165,12 @@ Zigbee network key. Back it up, and do not share dumps publicly.
 
 ## Open work
 
-- Find the cause of the DC-DC low-noise hang in the newer SDK, so bypass is
-  not needed.
-- Build and test the serial installer, including an NVM3 wipe through an
-  extra GBL program tag.
+- Optional: test whether DC-DC low-noise mode starts after a true power-on
+  reset; bypass works and is the current choice.
+- Publish the serial installer and a firmware image, with clear warnings.
+- Add an early recovery check to the firmware (for example, PA4 held low at
+  boot enters the bootloader), so a future bad image can be recovered
+  without SWD.
 - Recover hub 1, which still holds the silent generic image.
 - RF, range and stability tests.
 
