@@ -222,14 +222,14 @@ Test status on the development hub: the image builds with the service
 enabled and the files on the boot partition. The service script, run by hand
 on the hub, correctly:
 
+- migrated the radio from factory firmware (2.4.2), in about 50 seconds;
 - left hand-installed firmware alone;
 - finished an interrupted first install from the bootloader;
 - did nothing when the bundled firmware was already installed;
 - updated through PA4.
 
-ZHA worked afterwards. **Not yet tested:** a migration from factory firmware
-by the service itself, and a real first boot of the image with the service
-running under systemd.
+ZHA worked afterwards. **Not yet tested:** a real first boot of the image
+with the service running under systemd.
 
 ## Current experimental firmware and SWD procedure
 
