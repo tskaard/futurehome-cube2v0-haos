@@ -8,8 +8,11 @@
 - A serial install path (no debugger) **worked end to end on one hub**: from
   the factory firmware, and again from the EmberZNet firmware for a later
   update. The installer and firmware are not published yet.
-- **Do not flash any other experimental image over serial.** A bad image
-  cannot be recovered over serial; it needs SWD.
+- The current experimental firmware includes a **PA4 recovery check**: the
+  hub can force the radio into its bootloader, so a later bad image can be
+  replaced over serial. This was tested on one hub.
+- **Do not flash any other experimental image over serial.** An image without
+  the recovery check that hangs at startup can only be recovered with SWD.
 - The factory radio firmware speaks Futurehome's own serial protocol, not
   EZSP, so ZHA cannot use it.
 
@@ -20,7 +23,8 @@
 - Serial bridge: the radio's UART goes through a CP2102N (U11) USB-UART
   bridge on the Cube's internal USB hub. It appears as `/dev/ttyUSB0`.
 - Host control: the RK3328 drives radio power enable (GPIO1_A5), nRESET
-  (GPIO1_A0) and PA4 (GPIO1_A3, via R154).
+  (GPIO1_A0, Linux GPIO 32) and PA4 (GPIO1_A3 via R154, Linux GPIO 35). The
+  device tree leaves PA4 as an input without pull.
 - Debug lock is not set on the tested radio.
 
 ### Edge contact map
@@ -64,9 +68,10 @@ Both were confirmed by disassembling an SWD dump.
 - It is entered only by a software reset with the standard Gecko
   reset-reason word (0xF00F, BOOTLOAD 0x0202) in RAM, or when the
   application is structurally invalid.
-- There is **no GPIO activation pin and no boot-time window**. An
-  application that hangs during startup cannot be recovered over serial; it
-  needs SWD.
+- There is **no GPIO activation pin and no boot-time window** in the
+  bootloader itself. An application that hangs during startup can only be
+  recovered over serial if the application provides its own early check (see
+  [PA4 recovery check](#pa4-recovery-check)).
 - EmberZNet NCP's EZSP `launchStandaloneBootloader` also enters it, but only
   with mode 1 (normal); mode 0 is accepted and does nothing.
 - It accepts GBL program data anywhere from 0x0 to 0x100000, erasing 2 KiB
@@ -137,6 +142,35 @@ With the DC-DC bypass build flashed over SWD and NVM3 erased:
 impact of DC-DC bypass. The firmware image is not distributed here and is
 not an installation step.
 
+### PA4 recovery check
+
+The experimental firmware adds a check at the very start of `SystemInit()`,
+before C runtime setup and before any clock, DC-DC or radio code. It enables
+the internal pull-up on PA4 and reads the pin. If PA4 is low, it writes the
+standard Gecko bootloader request (`0xF00F0202`) to the start of RAM and
+resets, so the radio enters its bootloader. Normally the hub leaves PA4
+undriven and the firmware boots as usual.
+
+To enter the bootloader from the hub (tested on one hub, with Home Assistant
+Core stopped so nothing holds the serial port):
+
+```sh
+echo 35 > /sys/class/gpio/export 2>/dev/null; echo 32 > /sys/class/gpio/export 2>/dev/null
+echo low > /sys/class/gpio/gpio35/direction    # hold PA4 low
+echo low > /sys/class/gpio/gpio32/direction    # radio reset
+sleep 0.2
+echo in > /sys/class/gpio/gpio32/direction     # release reset
+sleep 0.3
+echo in > /sys/class/gpio/gpio35/direction     # release PA4
+```
+
+The bootloader then announces `aa 01 80 0a 00 cb` and answers the ping
+`aa 00 20 00 36` with `aa 01 40 00 98 7d`. An upload can follow, or the
+command `aa 00 20 09 2d` starts the installed application again. Release PA4
+before the upload finishes; otherwise the new application jumps straight
+back into the bootloader. Only firmware that contains this check can be
+recovered this way.
+
 ### SWD procedure (for people with a debugger)
 
 This worked on the second hub. Flashing can brick the radio's serial path;
@@ -168,9 +202,6 @@ Zigbee network key. Back it up, and do not share dumps publicly.
 - Optional: test whether DC-DC low-noise mode starts after a true power-on
   reset; bypass works and is the current choice.
 - Publish the serial installer and a firmware image, with clear warnings.
-- Add an early recovery check to the firmware (for example, PA4 held low at
-  boot enters the bootloader), so a future bad image can be recovered
-  without SWD.
 - Recover hub 1, which still holds the silent generic image.
 - RF, range and stability tests.
 
